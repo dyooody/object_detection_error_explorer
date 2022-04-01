@@ -2,109 +2,85 @@
 	export let style;
   export let table_heads;
   export let table_vals;
-	export let detail = "False";
+	//export let detail = "False";
 
-	console.log("detail ::: ", detail)
+	//console.log("detail ::: ", detail)
+
+	function class_details_result(selected_class){
+		console.log("selected_class :::: ", selected_class);
+		fetch('/detailed_class_info/${selected_class}').then(res=>res.json()).then(data=>{
+			console.log("class_detail_result:::: ", data);
+		})
+	}
 </script>
 
-<table class={style}>
-	<thead>
-		<tr>
-			{#each table_heads as head}
-				<th>{head}</th>
-			{/each}
-			{#if detail == "True"}
-				<th>details</th>
-			{/if}
-		<tr/>
-	</thead>
-	<tbody>
-		{#each table_vals as rows}
+<div id="table_size">
+	<table class={style}>
+		<thead>
 			<tr>
-				{#each rows as cell}
-					<td>{cell}</td>
+				{#each table_heads as head}
+					<th>{head}</th>
 				{/each}
-				{#if detail == "True"}
-					<button>more detail</button>
-				{/if}
+				<!--{#if detail == "True"}
+					<th>details</th>
+				{/if}-->
+			<tr/>
+		</thead>
+		<tbody>
+			{#each table_vals as rows}
+				<tr>
+					{#each rows as cell}
+						<td on:click={class_details_result(cell)}>{cell}</td>
+					{/each}
+					<!--{#if detail == "True"}
+						<td><button on:click={class_details_result(rows[0])}>more detail</button></td>
+					{/if}-->
 
-			</tr>
-		{/each}
-	</tbody>
-</table>
+
+				</tr>
+			{/each}
+		</tbody>
+	</table>
+</div>
 
 <style>
+	#table_size{
+		width: 700px;
+	}
 	table, th, td {
 		border: 1px solid;
 		border-collapse: collapse;
 		margin-bottom: 10px;
 	}
 
-	table.redTable {
-		border: 2px solid #A40808;
-		background-color: #EEE7DB;
+	table.greyTable {
+		border: 2px solid #17202A;
+		background-color: #ECEFF1;
 		width: 100%;
 		text-align: center;
 		border-collapse: collapse;
 	}
-	table.redTable td, table.redTable th {
-		border: 1px solid #AAAAAA;
-		padding: 3px 2px;
+	table.greyTable td, table.greyTable th {
+		border: 2px solid #808B96;
+		padding: 5px 3px;
 	}
-	table.redTable tbody td {
-		font-size: 13px;
-	}
-	table.redTable tr:nth-child(even) {
-		background: #F5C8BF;
-	}
-	table.redTable thead {
-		background: #A40808;
-		background: -moz-linear-gradient(top, #bb4646 0%, #ad2020 66%, #A40808 100%);
-		background: -webkit-linear-gradient(top, #bb4646 0%, #ad2020 66%, #A40808 100%);
-		background: linear-gradient(to bottom, #bb4646 0%, #ad2020 66%, #A40808 100%);
-	}
-	table.redTable thead th {
-		font-size: 19px;
-		font-weight: bold;
-		color: #FFFFFF;
-		text-align: center;
-		border-left: 2px solid #A40808;
-	}
-	table.redTable thead th:first-child {
-		border-left: none;
-	}
-
-		table.blueTable {
-		border: 1px solid #1C6EA4;
-		background-color: #EEEEEE;
-		width: 100%;
-		text-align: center;
-		border-collapse: collapse;
-	}
-	table.blueTable td, table.blueTable th {
-		border: 1px solid #AAAAAA;
-		padding: 3px 2px;
-	}
-	table.blueTable tbody td {
-		font-size: 13px;
-	}
-	table.blueTable tr:nth-child(even) {
-		background: #D0E4F5;
-	}
-	table.blueTable thead {
-		background: #1C6EA4;
-		background: -moz-linear-gradient(top, #5592bb 0%, #327cad 66%, #1C6EA4 100%);
-		background: -webkit-linear-gradient(top, #5592bb 0%, #327cad 66%, #1C6EA4 100%);
-		background: linear-gradient(to bottom, #5592bb 0%, #327cad 66%, #1C6EA4 100%);
-		border-bottom: 2px solid #444444;
-	}
-	table.blueTable thead th {
+	table.greyTable tbody td {
 		font-size: 15px;
+	}
+	table.greyTable tr:nth-child(even) {
+		background: #CCD1D1;
+	}
+	table.greyTable thead {
+		background: #707B7C;
+	}
+	table.greyTable thead th {
+		font-size: 18px;
 		font-weight: bold;
 		color: #FFFFFF;
-		border-left: 2px solid #D0E4F5;
+		text-align: center;
+		border-left: 2px solid #707B7C;
 	}
-	table.blueTable thead th:first-child {
+	table.greyTable thead th:first-child {
 		border-left: none;
 	}
 </style>
