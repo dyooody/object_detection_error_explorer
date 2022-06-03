@@ -3,70 +3,88 @@
 	import Distribution from './Components/Distribution.svelte';
 	import { onMount } from 'svelte';
 	import { scaleLinear } from "d3-scale";
+	import { line, curveStep, curveNatural, extent, svg, text } from 'd3';
 	import Switch from "svelte-switch";
 	import Modal from './Components/Modal.svelte';
-
-	let switch_check = false;
-
-	function handleChange(e){
-		const {checked} = e.detail;
-		switch_check = checked;
-	}
+	import { tooltip } from './Components/tooltip';
+	let change_table_switch = false;
 	let show_default_chart = true;
 	let show_default_images = true;
 	let show_chart_images = false;
+	let show_gt_images = false;
 
-	let class_list = [];
-  let ap = [];
-  let nums = [];
-  let gt_nums = [];
+
+	function tableChange(e){
+		const {checked} = e.detail;
+		change_table_switch = checked;
+		show_chart_images = false;
+		show_selected_chart = false;
+		show_default_chart = true;
+		show_default_images = true;
+		console.log("chage_table_swtich :: ", change_table_switch);
+	}
+
+
   let table_heads = [];
   let table_vals = [];
-  let result_array = [];
+	let table_heads_desc;
+
+	let gt_table_heads = [];
+	let gt_table_vals = [];
+	let gt_table_heads_desc;
+	let other_heads_vals = ['class name', 'average precision', 'detected number', 'gt number', 'number'];
 
   onMount(async ()=>{
-    let dt_type_vals = {
-		"bicycle": [],
-		"bus": [],
-		"car": [],
-		"motorcycle": [],
-		"other person": [],
-		"other vehicle": [],
-		"pedestrian": [],
-		"rider": [],
-		"traffic light": [],
-		"traffic sign": [],
-		"trailer": [],
-		"train": [],
-		"truck": []
-	  };
-    fetch('/class_values/').then(res =>res.json()).then(overall=>{
-      result_array = overall;
-      class_list = Object.keys(result_array);
-      class_list = class_list;
-      table_heads = ['class name', 'average precision', 'number', 'gt_number',
-			'type 1', 'type 2', 'type 3', 'type 4', 'type 5', 'type 6', 'type 7', 'type 8'];
-      table_heads = table_heads;
+		fetch('/class_values/').then(res =>res.json()).then(overall=>{
+			let dt_type_vals = {
+			"bicycle": [],
+			"bus": [],
+			"car": [],
+			"motorcycle": [],
+			"other person": [],
+			"other vehicle": [],
+			"pedestrian": [],
+			"rider": [],
+			"traffic light": [],
+			"traffic sign": [],
+			"trailer": [],
+			"train": [],
+			"truck": []
+			};
 
-      for (var i=0; i < Object.keys(result_array).length; i++){
-        nums.push(result_array[class_list[i]]['num']);
+			let result_array = overall;
+			let class_list = Object.keys(result_array);
+			class_list = class_list;
+			table_heads = ['class name', 'average precision', 'detected number', 'gt number',
+			'correct detection', 'classification error', 'localization error',
+			'cls and loc error', 'duplication error', 'back detect error', 'other error'];
+			//table_heads = ['class name', 'average precision', 'number', 'gt_number', 'type 1',
+			//'type 2', 'type 3', 'type 4', 'type 5', 'type 6', 'type 8'];
+
+			let nums = [];
+			let ap = [];
+			let gt_nums = [];
+
+			for (var i=0; i < Object.keys(result_array).length; i++){
+				nums.push(result_array[class_list[i]]['num']);
 				nums = nums;
 				ap.push(result_array[class_list[i]]['ap']);
 				ap = ap;
 				gt_nums.push(result_array[class_list[i]]['gt_num']);
 				gt_nums = gt_nums;
-        let dt_results = result_array[class_list[i]]['dt_result'];
+				let dt_results = result_array[class_list[i]]['dt_result'];
 				let dt_keys = Object.keys(dt_results);
 				for (var j = 0; j < Object.keys(dt_results).length; j++){
-					dt_type_vals[class_list[i]].push(dt_results[dt_keys[j]]['total_num'])
-					dt_type_vals[class_list[i]] = dt_type_vals[class_list[i]];
+					if (dt_keys[j] != '7'){
+						dt_type_vals[class_list[i]].push(dt_results[dt_keys[j]]['total_num'])
+						dt_type_vals[class_list[i]] = dt_type_vals[class_list[i]];
+					}
 				}
-      }
-
-      table_vals = [];
-      for(var i = 0; i < class_list.length; i++){
-        var row = [];
-        row.push(class_list[i]);
+			}
+			table_vals = [];
+			for(var i = 0; i < class_list.length; i++){
+				var row = [];
+				row.push(class_list[i]);
 				row.push(ap[i]);
 				row.push(nums[i]);
 				row.push(gt_nums[i]);
@@ -74,22 +92,77 @@
 					row.push(dt_type_vals[class_list[i]][j]);
 				}
 				table_vals.push(row);
-      }
-      table_vals = table_vals;
-    });
+			}
+			table_vals = table_vals;
+   });
+		fetch('/gt_values/').then(res => res.json()).then(overall =>{
+			let dt_type_vals = {
+				"bicycle": [],
+				"bus": [],
+				"car": [],
+				"motorcycle": [],
+				"other person": [],
+				"other vehicle": [],
+				"pedestrian": [],
+				"rider": [],
+				"traffic light": [],
+				"traffic sign": [],
+				"trailer": [],
+				"train": [],
+				"truck": []
+				};
+			let result_array = overall;
+			let class_list = Object.keys(result_array);
+			//gt_table_heads = ['class name', 'number', 'type 1', 'type 2', 'type 3', 'type 4', 'type 5',
+			//'type 6','type 7', 'type 8', 'type 9', 'type 10', 'type 11'];
+			gt_table_heads = ['class name', 'number', 'match + correct', 'match + cls', 'match + loc',
+			'match + cls and loc', 'match + incorrect', 'matches + cor, dup', 'matches + cor, cls', 'matches + cor, loc',
+			'matches + with cor', 'matches + incor', 'missed detected']
+			let nums = [];
+
+			for (var i=0; i < Object.keys(result_array).length; i++){
+				nums.push(result_array[class_list[i]]['num']);
+				let gt_type = result_array[class_list[i]]['gt_type'];
+				let gt_keys = Object.keys(gt_type);
+				for (var j=0; j<Object.keys(gt_type).length; j++){
+					dt_type_vals[class_list[i]].push(gt_type[gt_keys[j]]['num']);
+				}
+			}
+			gt_table_vals = [];
+			for (var i=0; i< class_list.length; i++){
+				var row = [];
+				row.push(class_list[i]);
+				row.push(nums[i]);
+				for (var j=0; j<dt_type_vals[class_list[i]].length; j++){
+					row.push(dt_type_vals[class_list[i]][j]);
+				}
+				gt_table_vals.push(row);
+			}
+			gt_table_vals = gt_table_vals;
+		});
+
+		fetch('/dt_types/').then(res => res.json()).then(types=>{
+			table_heads_desc = types;
+			console.log("table_heads_desc ::: ", table_heads_desc);
+		});
+		fetch('/gt_types/').then(res => res.json()).then(types=>{
+			gt_table_heads_desc = types;
+			console.log("gt_table_head_desc ::: ", gt_table_heads_desc);
+		});
+
   });
 
 	// images
 	let class_lists = {
-		"car":{checked: false, color: "#884EA0"},
-		"bus":{checked: false, color: "#A93226 "},
+		"car":{checked: false, color: "#EC7063"},
+		"bus":{checked: false, color: "#AF7AC5"},
 		"bicycle":{checked: false, color: "#2E86C1"},
-		"motorcycle":{checked: false, color:"#17A589"},
-		"truck":{checked: false, color:"#2ECC71"},
+		"motorcycle":{checked: false, color:"#76D7C4"},
+		"truck":{checked: false, color:"#F8C471"},
 		"traffic sign":{checked: false, color: "#F1C40F"},
 		"traffic light":{checked: false, color:"#CA6F1E"},
-		"pedestrian":{checked: false, color:"#F7F9F9"},
-		"rider":{checked: false, color:"#FEF5E7"},
+		"pedestrian":{checked: false, color:"#1F618D"},
+		"rider":{checked: false, color:"#85C1E9"},
 		"train":{checked: false, color:"#F4ECF7"},
 		"other vehicle":{checked: false, color:"#28B463"},
 		"other person":{checked: false, color:"#85C1E9"},
@@ -114,7 +187,8 @@
 	let image_source_val = [];
   let image_idx_src = [];
 	let imageWidth = 1280, imageHeight=720, setWidth= 300, setHeight=168;
-	let x1,x2,y1,y2,boxHeight, boxWidth, X, Y;
+	let x1,x2,y1,y2,boxHeight, boxWidth, X, Y, gt_cate_name;
+	let tooltip_val;
 	let show_selected_images = false;
 	let show_selected_chart = false;
 	let image_val_lists = [];
@@ -153,11 +227,59 @@
   let classes_ticks = [];
   let classes_barWidth;
 
+	let line_iou_xScale;
+	let	line_iou_ySclae;
+	let	line_bbox_xScale;
+	let	line_bbox_yScale;
+	let	line_score_xScale;
+	let	line_score_yScale;
+	let line_iou_xTicks = [];
+	let line_iou_yTicks = [];
+	let line_bbox_xTicks = [];
+	let line_bbox_yTicks = [];
+	let line_score_xTicks = [];
+	let line_score_yTicks = [];
+
+	let line_gen;
+	let total_result;
+
 	function adjust_format(tick){
 		return "'" + tick.toString().slice(-2);
 	}
 
+	let gt_image_source_val = [];
+	let gt_image_idx_src = [];
+	let gt_image_val_lists = [];
 
+	function gt_class_results(selected_class, selected_head){
+		gt_image_source_val = [];
+		gt_image_idx_src = [];
+		gt_image_val_lists = [];
+
+		show_default_images = false;
+		show_selected_images = false;
+		show_gt_images = true;
+		fetch("/ground_truth_images/"+selected_class+'/'+selected_head).then(res=>res.json()).then(data=>{
+			console.log("data ::: ", data);
+
+			gt_image_val_lists = data['image_values'];
+			current_selected_class = selected_class;
+			current_selected_dtype = data['gtype'];
+
+			for (var i = 0; i < gt_image_val_lists.length; i++){
+				let cur_data = gt_image_val_lists[i];
+				let image_path = cur_data['image_dir'];
+				gt_image_idx_src.push(cur_data['image_dir']);
+        gt_image_idx_src = gt_image_idx_src;
+				let selected_bbox = cur_data['cate_dtype']['box'];
+
+				gt_image_source_val[image_path] = [];
+				gt_image_source_val[image_path]['cl_gt'] = selected_bbox;
+			}
+
+			console.log("gt_image_source_val :: ", gt_image_source_val);
+		});
+	}
 
 	function class_details_result(selected_class, selected_head){
 		image_source_val = [];
@@ -191,54 +313,71 @@
   	classes_ticks = [];
   	classes_barWidth;
 
+		line_iou_xScale;
+		line_iou_ySclae;
+		line_iou_xTicks = [];
+		line_iou_yTicks = [];
+		line_bbox_xScale;
+		line_bbox_yScale;
+		line_bbox_xTicks = [];
+		line_bbox_yTicks = [];
+		line_score_xScale;
+		line_score_yScale;
+		line_score_xTicks = [];
+		line_score_yTicks = [];
+
+		line_gen;
+
 		show_default_images = false;
 		show_selected_images = true;
 		show_default_chart = false;
 		show_selected_chart = true;
+		show_gt_images = false;
 		fetch("/detailed_class_info/"+selected_class+'/'+selected_head).then(res=>res.json()).then(data=>{
+			total_result = data;
 			image_val_lists = data['image_values'];
 			selected_dtype = data['dtype'];
 			current_selected_class = selected_class;
 			current_selected_dtype = data['dtype'];
+
       for (var i =0; i< image_val_lists.length; i++){
         let image_path = "";
-        let class_bbox = [];
-        let dtype_bbox = [];
-				let gt_bbox = [];
-        let cl_key = [];
-        let dt_key = [];
-				let gt_key = [];
+
+				let selected_gt_bbox = [];
+				let selected_gt_cate = [];
+
         let data = image_val_lists[i];
-        dt_key = Object.keys(data['bbox_dtype']);
-        dt_key = dt_key;
-        cl_key = Object.keys(data['bbox_cate']);
-        cl_key = cl_key;
-				gt_key = Object.keys(data['gt_bbox']);
-				gt_key = gt_key;
+
+        let bbox_values = data['bbox_cate'];
+				let selected_bbox = data['cate_dtype']['box'];
+				let selected_scores = data['cate_dtype']['score'];
+				let selected_pred = data['cate_dtype']['pred'];
+				let selected_gt = data['cate_dtype']['gt'];
+
         image_path = data['image_dir'];
         image_idx_src.push(data['image_dir']);
         image_idx_src = image_idx_src;
-        for (var j=0; j<Object.keys(data['bbox_cate']).length; j++){
-          var cl_name = Object.keys(data['bbox_cate'])[j];
-          class_bbox[cl_name] = data['bbox_cate'][cl_name];
-        }
-        for (var k=0; k<Object.keys(data['bbox_dtype']).length; k++){
-          var dt_name = Object.keys(data['bbox_dtype'])[k];
-          dtype_bbox[dt_name] = data['bbox_dtype'][dt_name];
-        }
-				for (var l=0; l<Object.keys(data['gt_bbox']).length; l++){
-					var gt_name = Object.keys(data['gt_bbox'])[l];
-					gt_bbox[gt_name] = data['gt_bbox'][gt_name];
+				for (var m=0; m<Object.keys(data['cate_dtype_gt']['gt_bbox']).length; m++){
+					var gt_type = Object.keys(data['cate_dtype_gt']['gt_bbox'])[m];
+					selected_gt_bbox[gt_type] = data['cate_dtype_gt']['gt_bbox'][gt_type];
 				}
-        class_bbox = class_bbox;
-        dtype_bbox = dtype_bbox;
-				gt_bbox = gt_bbox;
+				for (var n=0; n<Object.keys(data['cate_dtype_gt']['gt_cate']).length; n++){
+					var gt_type = Object.keys(data['cate_dtype_gt']['gt_cate'])[n];
+					selected_gt_cate[gt_type] = data['cate_dtype_gt']['gt_cate'][gt_type];
+				}
         image_source_val[image_path] = [];
-        image_source_val[image_path]['cl_bbox'] = class_bbox;
-        image_source_val[image_path]['dt_bbox'] = dtype_bbox;
-				image_source_val[image_path]['gt_bbox'] = gt_bbox;
+				image_source_val[image_path]['cl_dt'] = selected_bbox;
+				image_source_val[image_path]['cl_dt_gt'] = selected_gt_bbox;
+				image_source_val[image_path]['cl_dt_gt_cate'] = selected_gt_cate;
+				image_source_val[image_path]['cl_dt_score'] = selected_scores;
+				image_source_val[image_path]['cl_dt_pred'] = selected_pred;
+				image_source_val[image_path]['cl_dt_cate'] = selected_gt;
+				image_source_val[image_path]['bbox_values'] = bbox_values;
 
-        //image_source_val[image_path] = class_bbox;
+				if (selected_bbox.length != selected_scores.length){
+					console.log("INCORRECT!!!")
+				}
+
       }
 			let total_bbox = data['bbox_size'];
 			let bbox_lens = [];
@@ -330,6 +469,49 @@
 				classes_ticks = classes_yScale.ticks(5);
 			}
 
+			let total_chart_iou = data['chart_iou'];
+			line_iou_xScale = scaleLinear()
+				.domain([0, Math.max(...total_chart_iou)])
+				.range([padding.left, width - padding.right]);
+
+			line_iou_ySclae = scaleLinear()
+				.domain([0, Math.max(...total_chart_iou)])
+				.range([height - padding.bottom, padding.top]);
+
+			line_iou_xTicks = line_iou_xScale.ticks(10);
+			line_iou_yTicks = line_iou_ySclae.ticks(10);
+
+			let total_chart_bbox = data['chart_bbox'];
+			line_bbox_xScale = scaleLinear()
+				.domain([0, Math.max(...total_chart_bbox)])
+				.range([padding.left, width - padding.right]);
+
+			line_bbox_yScale = scaleLinear()
+				.domain([0, Math.max(...total_chart_bbox)])
+				.range([height - padding.bottom, padding.top]);
+
+			line_bbox_xTicks = line_bbox_xScale.ticks(10);
+			line_bbox_yTicks = line_bbox_yScale.ticks(10);
+
+			let total_chart_score = data['chart_score'];
+			line_score_xScale = scaleLinear()
+				.domain([0, Math.max(...total_chart_score)])
+				.range([padding.left, width - padding.right]);
+
+			line_score_yScale = scaleLinear()
+				.domain([0, Math.max(...total_chart_score)])
+				.range([height - padding.bottom, padding.top]);
+
+			line_score_xTicks = line_score_xScale.ticks(10);
+			line_score_yTicks = line_score_yScale.ticks(10);
+			console.log("line_score_yTicks::: ", line_score_yTicks);
+
+			line_gen = line()
+				.curve(curveStep)
+				.x((data) => line_bbox_xScale(data.chart_bbox))
+				.y((data) => lines_score_yScale(data.chart_score));
+
+			line_gen = line_gen;
 
 		});
 	}
@@ -343,9 +525,11 @@
 		show_default_chart = true;
 		show_selected_chart = false;
 		show_chart_images = false;
+		show_gt_images = false;
 	}
 
 	function td_clicked(selected_class, selected_head, event){
+		console.log("selected td ::: ", selected_class + ", "+ selected_head);
 		var j = document.getElementsByTagName("td");
 		for (var i=0; i < j.length; i++){
 			j[i].style.backgroundColor = 'white';
@@ -358,8 +542,24 @@
 		show_default_chart = false;
 		show_selected_chart = true;
 		show_chart_images = false;
+		show_gt_images = false;
 		class_details_result(selected_class, selected_head);
 
+	}
+
+	function td_gt_clicked(selected_class, selected_head, event){
+		console.log("selected gt td ::: ", selected_class + ", " + selected_head);
+		var j = document.getElementsByTagName("td");
+		for (var i=0; i < j.length; i++){
+			j[i].style.backgroundColor = 'white';
+			j[i].style.color = "black";
+		}
+		event.style.backgroundColor = '#8a8787';
+		event.style.color = "white";
+		show_selected_images = false;
+		show_default_images = false;
+		show_gt_images = true;
+		gt_class_results(selected_class, selected_head);
 	}
 
 	function chart_dblclick(chart_type, chart_key, event){
@@ -369,6 +569,7 @@
 		show_default_chart = false;
 		show_selected_chart = true;
 		show_default_images = false;
+		show_gt_images = false;
 		event.style.fill = "#f5e0a8";
 	}
 
@@ -378,7 +579,11 @@
 	let chart_image_val_lists = [];
 	function chart_detail_info(chart_type, chart_key, event){
 		console.log("event.style :: ", event.style);
-		event.style.fill = "yellowgreen";
+		var r = document.getElementsByClassName("chart_bars");
+		for (var i=0; i < r.length; i++){
+			r[i].style.fill = "#f5e0a8"
+		}
+		event.style.fill = "#f5bc1f";
 		chart_img_source_val = [];
 		chart_img_idx_src = [];
 		chart_image_val_lists = [];
@@ -388,46 +593,43 @@
 		show_default_chart = false;
 		show_selected_chart = true;
 		show_chart_images = true;
+		show_gt_images = false;
 		fetch("/get_chart_detail_info/"+current_selected_class+'/'+current_selected_dtype+'/'+chart_key+'/'+chart_type).then(
 			res=>res.json()).then(result=>{
 				chart_image_val_lists = result;
 				for (var i = 0; i < chart_image_val_lists.length; i++){
 					let image_path = "";
-					let class_bbox = [];
-					let dtype_bbox = [];
-					let gt_bbox = [];
-					let cl_key = [];
-					let dt_key = [];
-					let gt_key = [];
+
+					let selected_gt_bbox = [];
+					let selected_gt_cate = [];
+
 					let data = chart_image_val_lists[i];
-					dt_key = Object.keys(data['bbox_dtype']);
-					dt_key = dt_key;
-					cl_key = Object.keys(data['bbox_cate']);
-					cl_key = cl_key;
-					gt_key = Object.keys(data['gt_bbox']);
-					gt_key = gt_key;
+					let bbox_values = data['bbox_cate'];
+					let selected_bbox = data['cate_dtype']['box'];
+					let selected_scores = data['cate_dtype']['score'];
+					let selected_pred = data['cate_dtype']['pred'];
+					let selected_gt = data['cate_dtype']['gt'];
+
+
 					image_path = data['image_dir'];
 					chart_img_idx_src.push(data['image_dir']);
 					chart_img_idx_src = chart_img_idx_src;
-					for (var j=0; j<Object.keys(data['bbox_cate']).length; j++){
-						var cl_name = Object.keys(data['bbox_cate'])[j];
-						class_bbox[cl_name] = data['bbox_cate'][cl_name];
+					for (var m=0; m<Object.keys(data['cate_dtype_gt']['gt_bbox']).length; m++){
+						var gt_type = Object.keys(data['cate_dtype_gt']['gt_bbox'])[m];
+						selected_gt_bbox[gt_type] = data['cate_dtype_gt']['gt_bbox'][gt_type];
 					}
-					for (var k=0; k<Object.keys(data['bbox_dtype']).length; k++){
-						var dt_name = Object.keys(data['bbox_dtype'])[k];
-						dtype_bbox[dt_name] = data['bbox_dtype'][dt_name];
+					for (var n=0; n<Object.keys(data['cate_dtype_gt']['gt_cate']).length; n++){
+						var gt_type = Object.keys(data['cate_dtype_gt']['gt_cate'])[n];
+						selected_gt_cate[gt_type] = data['cate_dtype_gt']['gt_cate'][gt_type];
 					}
-					for (var l=0; l<Object.keys(data['gt_bbox']).length; l++){
-						var gt_name = Object.keys(data['gt_bbox'])[l];
-						gt_bbox[gt_name] = data['gt_bbox'][gt_name];
-					}
-					class_bbox = class_bbox;
-					dtype_bbox = dtype_bbox;
-					gt_bbox = gt_bbox;
 					chart_img_source_val[image_path] = [];
-					chart_img_source_val[image_path]['cl_bbox'] = class_bbox;
-					chart_img_source_val[image_path]['dt_bbox'] = dtype_bbox;
-					chart_img_source_val[image_path]['gt_bbox'] = gt_bbox;
+					chart_img_source_val[image_path]['cl_dt'] = selected_bbox;
+					chart_img_source_val[image_path]['cl_dt_gt'] = selected_gt_bbox;
+					chart_img_source_val[image_path]['cl_dt_gt_cate'] = selected_gt_cate;
+					chart_img_source_val[image_path]['cl_dt_score'] = selected_scores;
+					chart_img_source_val[image_path]['cl_dt_pred'] = selected_pred;
+					chart_img_source_val[image_path]['cl_dt_cate'] = selected_gt;
+					chart_img_source_val[image_path]['bbox_values'] = bbox_values;
 				}
 			})
 
@@ -446,7 +648,6 @@
 		isOpenModal = false;
 	}
 
-
 </script>
 
 <main>
@@ -454,13 +655,33 @@
 	<div id="container">
 		<div id="sidebar" style="width: 550px;">
 			<div id="summary-view" class="view-panel">
-				<div class="view-title">Result Summary</div>
+				<div class="view-title">Result Summary
+					<Switch on:change={tableChange} checked={change_table_switch} onColor="#7d8a91"
+					onHandleColor="#fff" handleDiameter={20} unCheckedIcon={false}
+					boxShadow="0px 1px 5px rgba(0, 0, 0, 0.6)"
+					activeBoxShadow="0px 0px 1px 10px rgba(0, 0, 0, 0.2)"
+					height={16} width={30} containerClass="react-switch"
+					id="material-switch">
+					<span slot="checkedIcon" />
+					<span slot="unCheckedIcon"/>
+					</Switch>
+
+					{change_table_switch  ? 'ground truth' : 'detection'}
+				</div>
+					{#if change_table_switch == false}
 					<div id="table_size">
 						<table class="summary-table">
+							<!-- svelte-ignore component-name-lowercase
+							<svg id="table_heads" transform="rotate(-90)"> -->
 							<thead>
 								<tr>
 									{#each table_heads as head}
-										<th>{head}</th>
+										{#if other_heads_vals.includes(head) == false}
+										<th class="rotate"><div title={table_heads_desc[head]["desc"]} use:tooltip><span>{head}</span></div></th>
+										{/if}
+										{#if other_heads_vals.includes(head) == true}
+										<th class="rotate"><div><span>{head}</span></div></th>
+										{/if}
 									{/each}
 								<tr/>
 							</thead>
@@ -468,14 +689,204 @@
 								{#each table_vals as rows}
 									<tr>
 										{#each rows as cell, i}
-										<td on:click={td_clicked(rows[0], table_heads[i],this)} on:dblclick={td_doubleClicked(rows[0], this)}>{cell}</td>
+										<td on:click={td_clicked(rows[0], table_heads[i],this)} on:dblclick={td_doubleClicked(rows[0], this)}>
+											{#if cell == 'bicycle'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" x="0" y="0" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'bus'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" x="0" width="8" height="10">
+													<rect width="8" height="10" x="0" y="0" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'car'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'motorcycle'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'other person'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'other vehicle'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'pedestrian'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'rider'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'traffic light'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'traffic sign'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'trailer'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'train'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'truck'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{cell}
+										</td>
 										{/each}
 									</tr>
 								{/each}
 							</tbody>
 						</table>
 					</div>
+					{/if}
+					{#if change_table_switch == true}
+					<div id="table_size">
+						<table class="summary-table">
+							<thead>
+								<tr>
+									{#each gt_table_heads as head}
+										{#if other_heads_vals.includes(head) == false}
+										<th class="rotate"><div title={gt_table_heads_desc[head]["desc"]} use:tooltip><span>{head}</span></div></th>
+										{/if}
+										{#if other_heads_vals.includes(head) == true}
+										<th class="rotate"><div><span>{head}</span></div></th>
+										{/if}
+									{/each}
+								<tr/>
+							</thead>
+							<tbody>
+								{#each gt_table_vals as rows}
+									<tr>
+										{#each rows as cell, i}
+										<td on:click={td_gt_clicked(rows[0], gt_table_heads[i],this)} on:dblclick={td_doubleClicked(rows[0], this)}>
+											{#if cell == 'bicycle'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'bus'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'car'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'motorcycle'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'other person'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'other vehicle'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'pedestrian'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'rider'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'traffic light'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'traffic sign'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'trailer'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'train'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{#if cell == 'truck'}
+												<!-- svelte-ignore component-name-lowercase -->
+												<svg class="color-block" width="8" height="10">
+													<rect width="8" height="10" fill={class_lists[cell]['color']} stroke={class_lists[cell]['color']}/>
+												</svg>
+											{/if}
+											{cell}
+										</td>
+										{/each}
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+					{/if}
+					<!--<InfoModal infoModalOpen={infoModalOpen} on:closeInfoModal={closeInfoModal}/>-->
 			</div>
+
 			<div id="score-distributions-view" class="view-panel">
 				<div class="view-title">Score Distributions</div>
 					<div id="score-distributions-view-content">
@@ -483,13 +894,15 @@
 						<Distribution/>
 						{/if}
 						{#if show_selected_chart == true}
-						<h3> bbox distribution </h3>
+						<h4> bbox distribution </h4>
 						<div class="chart" bind:clientWidth={width} bind:clientHeight={height}>
+							<!-- svelte-ignore component-name-lowercase -->
 							<svg class = "chart-svg">
 								<!-- y axis -->
 								<g class="axis y-axis">
 									{#each bbox_ticks as tick}
 										<g class="tick tick-{tick}" transform="translate(0, {bbox_yScale(tick)})">
+											<!-- svelte-ignore component-name-lowercase -->
 											<line x2="100%"></line>
 											<text y ="-4">{tick} </text>
 										</g>
@@ -507,7 +920,7 @@
 
 								<g class='bars'>
 									{#each bbox_vals as val, i}
-										<rect x="{bbox_xScale(i) + 10}" y="{bbox_yScale(val.value)}" width="{bbox_barWidth - 8}"
+										<rect class = "chart_bars" x="{bbox_xScale(i) + 10}" y="{bbox_yScale(val.value)}" width="{bbox_barWidth - 8}"
 										height = "{bbox_yScale(0) - bbox_yScale(val.value)}"
 										on:click={chart_detail_info('bbox', val.key, this)} on:dblclick={chart_dblclick('bbox', val.key, this)}/>
 									{/each}
@@ -517,13 +930,15 @@
 
 						<!-- score chart -->
 						{#if selected_dtype != 7}
-						<h3> score distribution </h3>
+						<h4> score distribution </h4>
 						<div class="chart" bind:clientWidth={width} bind:clientHeight={height}>
+							<!-- svelte-ignore component-name-lowercase -->
 							<svg class = "chart-svg">
 								<!-- y axis -->
 								<g class="axis y-axis">
 									{#each score_ticks as tick}
 										<g class="tick tick-{tick}" transform="translate(0, {score_yScale(tick)})">
+											<!-- svelte-ignore component-name-lowercase -->
 											<line x2="100%"></line>
 											<text y ="-4">{tick} </text>
 										</g>
@@ -541,7 +956,7 @@
 
 								<g class='bars'>
 									{#each score_vals as val, i}
-										<rect x="{score_xScale(i) + 10}" y="{score_yScale(val.value)}" width="{score_barWidth - 8}"
+										<rect class="chart_bars" x="{score_xScale(i) + 10}" y="{score_yScale(val.value)}" width="{score_barWidth - 8}"
 										height = "{score_yScale(0) - score_yScale(val.value)}"
 										on:click={chart_detail_info('score', val.key, this)} on:dblclick={chart_dblclick('score', val.key, this)}/>
 									{/each}
@@ -552,13 +967,15 @@
 
 						<!-- iou chart -->
 						{#if selected_dtype != 6 && selected_dtype != 7}
-						<h3> iou distribution </h3>
+						<h4> iou distribution </h4>
 						<div class="chart" bind:clientWidth={width} bind:clientHeight={height}>
+							<!-- svelte-ignore component-name-lowercase -->
 							<svg class="chart-svg">
 								<!-- y axis -->
 								<g class="axis y-axis">
 									{#each iou_ticks as tick}
 										<g class="tick tick-{tick}" transform="translate(0, {iou_yScale(tick)})">
+											<!-- svelte-ignore component-name-lowercase -->
 											<line x2="100%"></line>
 											<text y ="-4">{tick} </text>
 										</g>
@@ -576,7 +993,7 @@
 
 								<g class='bars'>
 									{#each iou_vals as val, i}
-										<rect x="{iou_xScale(i) + 10}" y="{iou_yScale(val.value)}" width="{iou_barWidth - 8}"
+										<rect class = "chart_bars" x="{iou_xScale(i) + 10}" y="{iou_yScale(val.value)}" width="{iou_barWidth - 8}"
 										height = "{iou_yScale(0) - iou_yScale(val.value)}"
 										on:click={chart_detail_info('iou', val.key, this)} on:dblclick={chart_dblclick('iou', val.key, this)}/>
 									{/each}
@@ -587,13 +1004,15 @@
 
 						<!-- misdetected class chart-->
 						{#if selected_dtype == 2}
-						<h3> mis-detected distribution </h3>
+						<h4> mis-detected distribution </h4>
 						<div class = "chart" bind:clientWidth={width} bind:clientHeight={height}>
+							<!-- svelte-ignore component-name-lowercase -->
 							<svg class = "chart-svg">
 								<!-- y axis-->
 								<g class="axis y-axis">
 									{#each classes_ticks as tick}
 										<g class="tick tick-{tick}" transform="translate(0, {classes_yScale(tick)})">
+										<!-- svelte-ignore component-name-lowercase -->
 										<line x2="100%"></line>
 										<text y ="-4">{tick} </text>
 										</g>
@@ -611,7 +1030,7 @@
 
 								<g class='bars'>
 									{#each classes_vals as val, i}
-										<rect x="{classes_xScale(i) + 10}" y="{classes_yScale(val.value)}" width="{classes_barWidth - 8}"
+										<rect class = "chart_bars" x="{classes_xScale(i) + 10}" y="{classes_yScale(val.value)}" width="{classes_barWidth - 8}"
 										height = "{classes_yScale(0) - classes_yScale(val.value)}"
 										on:click={chart_detail_info('type_class', val.key, this)} on:dblclick={chart_dblclick('type_class', val.key, this)}/>
 									{/each}
@@ -621,6 +1040,40 @@
 						</div>
 						{/if}
 
+
+						<!-- bbox and score line chart-->
+						<!--<h4> bbox and score</h4>
+						<div class = "chart" bind:clientWidth= {width} bind:clientHeight={height}>-->
+							<!-- svelte-ignore component-name-lowercase -->
+							<!--<svg class = "chart-svg">-->
+								<!-- y axis-->
+								<!--<g class = "axis y-axis">
+									{#each line_score_yTicks as tick}
+										<g class ='tick tick-{tick}' transform='translate(0, {line_score_yScale(tick)})'>
+
+											<line x2 = "100%"></line>
+											<text y='-4'>{tick}</text>
+										</g>
+									{/each}
+								</g>-->
+
+								<!-- x axis
+								<g class = "axis x-axis">
+									{#each line_bbox_xTicks as tick}
+										<g class = "tick" transform ='translate({line_bbox_xScale(tick)},0)'>
+
+											<line y1="100%"/>
+											<text y='{height - padding.bottom + 16}'>{tick}</text>
+										</g>
+									{/each}
+								</g>
+
+
+
+
+							</svg>
+						</div>-->
+
 					{/if}
 					</div>
 			</div>
@@ -629,6 +1082,7 @@
 		<div id="main-section" style="width: 1000px;">
 			<div id="selected-image-view" class="view-panel">
 				<div class="view-title">Image View
+					<!--
 					{#if show_selected_images == true || show_chart_images == true}
 					<Switch on:change={handleChange} checked={switch_check} onColor="#7d8a91"
 					onHandleColor="#fff" handleDiameter={20} unCheckedIcon={false}
@@ -641,7 +1095,7 @@
 					</Switch>
 
 					{switch_check ? 'detection type' : 'class'}
-					{/if}
+					{/if}-->
 				</div>
 				<div id="selected-image-view-content">
 					{#if show_default_images == true}
@@ -649,123 +1103,169 @@
 					{/if}
 
 					{#if show_selected_images == true}
-						{#if switch_check == false}
 						<!-- svelte-ignore a11y-missing-attribute -->
 						<div id ="images_view">
 							{#each image_idx_src as img_src}
-								<div class = "multiple_images" on:click={openModal} on:click={modal_value.get_instance_val(img_src, image_source_val[img_src])}>
-
+								<div class = "multiple_images" on:click={openModal} on:click={modal_value.get_instance_val(img_src, image_source_val[img_src], current_selected_class, current_selected_dtype)}>
 									<!-- svelte-ignore a11y-missing-attribute -->
 									<img class = "images" id="selected_image" src = {img_src} width = {setWidth} height={setHeight} >
-									<svg class = "bboxes" id="image_box" width={setWidth} height={setHeight}>
-										{#each Object.keys(image_source_val[img_src]['cl_bbox']) as cl_name}
-											{#each Object.keys(image_source_val[img_src]['cl_bbox'][cl_name]) as cl_key}
-												{x1 = image_source_val[img_src]['cl_bbox'][cl_name][cl_key]['x1']}
-												{x2 = image_source_val[img_src]['cl_bbox'][cl_name][cl_key]['x2']}
-												{y1 = image_source_val[img_src]['cl_bbox'][cl_name][cl_key]['y1']}
-												{y2 = image_source_val[img_src]['cl_bbox'][cl_name][cl_key]['y2']}
+									<!-- svelte-ignore component-name-lowercase -->
+									<svg class = "gt_bboxes" id="image_box" width={setWidth} height={setHeight}>
+										{#each Object.keys(image_source_val[img_src]['cl_dt_gt']) as gt_type}
+											{#each Object.keys(image_source_val[img_src]['cl_dt_gt'][gt_type]) as gt_key}
+												{x1 = image_source_val[img_src]['cl_dt_gt'][gt_type][gt_key]['x1']}
+												{x2 = image_source_val[img_src]['cl_dt_gt'][gt_type][gt_key]['x2']}
+												{y1 = image_source_val[img_src]['cl_dt_gt'][gt_type][gt_key]['y1']}
+												{y2 = image_source_val[img_src]['cl_dt_gt'][gt_type][gt_key]['y2']}
 												{boxWidth = (Math.abs(x2-x1)/imageWidth)*setWidth}
 												{boxHeight = (Math.abs(y2-y1)/imageHeight)*setHeight}
 												{X = (x1/imageWidth)*setWidth}
 												{Y = (y1/imageHeight)*setHeight}
-												<rect x={X} y={Y} width={boxWidth} height={boxHeight} stroke={class_lists[cl_name]['color']}/>
-											{/each}
+												{gt_cate_name = image_source_val[img_src]['cl_dt_gt_cate'][gt_type][gt_key]}
+												<rect x={X} y={Y} width={boxWidth} height={boxHeight} fill="transparent" stroke={class_lists[gt_cate_name]['color']}/> <!--stroke={gt_types[gt_type]['color']}/>-->
+												<g>
+													<!--<rect x={X + 0.67 * boxWidth} y = {Y - boxHeight/5} width ={boxWidth/3} height ={boxHeight/5} stroke={class_lists[current_selected_class]['color']} fill={class_lists[current_selected_class]['color']}/>-->
+													{#if (boxWidth / 3) > 6}
+														<text x = {X + boxWidth - 12} y={Y- 2} font-size={6} fill={class_lists[gt_cate_name]['color']}>{image_source_val[img_src]['cl_dt_gt_cate'][gt_type][gt_key]}</text>
+													{/if}
+													{#if (boxWidth / 3) <= 6 && (boxWidth /3 ) > 4}
+														<text x = {X + boxWidth - 8} y={Y- 2} font-size={4} fill={class_lists[gt_cate_name]['color']}>{image_source_val[img_src]['cl_dt_gt_cate'][gt_type][gt_key]}</text>
+													{/if}
+													{#if (boxWidth / 3) <= 4}
+														<text x = {X + 0.67 * boxWidth} y={Y- 2} font-size={boxWidth / 3} fill={class_lists[gt_cate_name]['color']}>{image_source_val[img_src]['cl_dt_gt_cate'][gt_type][gt_key]}</text>
+													{/if}
+												</g>
+												{/each}
 										{/each}
+									</svg>
+									<!-- svelte-ignore component-name-lowercase -->
+									<svg class = "bboxes" id="image_box" width={setWidth} height={setHeight}>
+										{#each Object.keys(image_source_val[img_src]['cl_dt']) as sel_bbox}
+											{x1 = image_source_val[img_src]['cl_dt'][sel_bbox]['x1']}
+											{x2 = image_source_val[img_src]['cl_dt'][sel_bbox]['x2']}
+											{y1 = image_source_val[img_src]['cl_dt'][sel_bbox]['y1']}
+											{y2 = image_source_val[img_src]['cl_dt'][sel_bbox]['y2']}
+											{boxWidth = (Math.abs(x2-x1)/imageWidth)*setWidth}
+											{boxHeight = (Math.abs(y2-y1)/imageHeight)*setHeight}
+											{X = (x1/imageWidth)*setWidth}
+											{Y = (y1/imageHeight)*setHeight}
+											{tooltip_val = "predicted class : " + image_source_val[img_src]['cl_dt_pred'][sel_bbox] + "\n truth class : " + image_source_val[img_src]['cl_dt_cate'][sel_bbox] + "\n detection score : " + image_source_val[img_src]['cl_dt_score'][sel_bbox]}
+											<rect title={tooltip_val} use:tooltip x={X} y={Y} width={boxWidth} height={boxHeight} fill="transparent" stroke={class_lists[current_selected_class]['color']}/>
+											<g>
+												<!--<rect x={X + 0.67 * boxWidth} y = {Y - boxHeight/5} width ={boxWidth/3} height ={boxHeight/5} stroke={class_lists[current_selected_class]['color']} fill={class_lists[current_selected_class]['color']}/>-->
+												{#if (boxWidth / 3) > 6}
+													<text x = {X} y={Y- 2} font-size={6} fill={class_lists[current_selected_class]['color']}>{image_source_val[img_src]['cl_dt_pred'][sel_bbox]}</text>
+												{/if}
+												{#if (boxWidth / 3) <= 6 && (boxWidth /3 ) > 4}
+												<text x = {X} y={Y- 2} font-size={4} fill={class_lists[current_selected_class]['color']}>{image_source_val[img_src]['cl_dt_pred'][sel_bbox]}</text>
+												{/if}
+												{#if (boxWidth / 3) <= 4}
+												<text x = {X} y={Y- 2} font-size={boxWidth / 3} fill={class_lists[current_selected_class]['color']}>{image_source_val[img_src]['cl_dt_pred'][sel_bbox]}</text>
+												{/if}
+											</g>
+											{/each}
 									</svg>
 								</div>
 								<Modal isOpenModal={isOpenModal} on:closeModal={closeModal} bind:this={modal_value}/>
 							{/each}
 						</div>
-						{/if}
 
-						{#if switch_check == true}
-						<!-- svelte-ignore a11y-missing-attribute -->
-						<div id ="images_view">
-							{#each image_idx_src as img_src}
-								<div class = "multiple_images" on:click={openModal} on:click={modal_value.get_instance_val(img_src, image_source_val[img_src])}>
-									<!-- svelte-ignore a11y-missing-attribute -->
-									<img class = "images" id="selected_image" src = {img_src} width = {setWidth} height={setHeight}>
-									<svg class = "bboxes" id="image_box" width={setWidth} height={setHeight}>
-										{#each Object.keys(image_source_val[img_src]['dt_bbox']) as dt_name}
-											{#each Object.keys(image_source_val[img_src]['dt_bbox'][dt_name]) as dt_key}
-												{x1 = image_source_val[img_src]['dt_bbox'][dt_name][dt_key]['x1']}
-												{x2 = image_source_val[img_src]['dt_bbox'][dt_name][dt_key]['x2']}
-												{y1 = image_source_val[img_src]['dt_bbox'][dt_name][dt_key]['y1']}
-												{y2 = image_source_val[img_src]['dt_bbox'][dt_name][dt_key]['y2']}
-												{boxWidth = (Math.abs(x2-x1)/imageWidth)*setWidth}
-												{boxHeight = (Math.abs(y2-y1)/imageHeight)*setHeight}
-												{X = (x1/imageWidth)*setWidth}
-												{Y = (y1/imageHeight)*setHeight}
-												<rect x={X} y={Y} width={boxWidth} height={boxHeight} stroke={detected_types[dt_name]['color']}/>
-											{/each}
-										{/each}
-									</svg>
-								</div>
-								<Modal isOpenModal={isOpenModal} on:closeModal={closeModal} bind:this={modal_value}/>
-							{/each}
-						</div>
-						{/if}
 					{/if}
 
 					{#if show_chart_images == true}
-						{#if switch_check == false}
 						<!-- svelte-ignore a11y-missing-attribute -->
 						<div id ="images_view">
 							{#each chart_img_idx_src as img_src}
-								<div class = "multiple_images" on:click={openModal} on:click={modal_value.get_instance_val(img_src, chart_img_source_val[img_src])}>
+								<div class = "multiple_images" on:click={openModal} on:click={modal_value.get_instance_val(img_src, chart_img_source_val[img_src], current_selected_class, current_selected_dtype)}>
 									<!-- svelte-ignore a11y-missing-attribute -->
 									<img class = "images" id="selected_image" src = {img_src} width = {setWidth} height={setHeight} on:click={image_detail(img_src)}>
-									<svg class = "bboxes" id="image_box" width={setWidth} height={setHeight}>
-										{#each Object.keys(chart_img_source_val[img_src]['cl_bbox']) as cl_name}
-											{#each Object.keys(chart_img_source_val[img_src]['cl_bbox'][cl_name]) as cl_key}
-												{x1 = chart_img_source_val[img_src]['cl_bbox'][cl_name][cl_key]['x1']}
-												{x2 = chart_img_source_val[img_src]['cl_bbox'][cl_name][cl_key]['x2']}
-												{y1 = chart_img_source_val[img_src]['cl_bbox'][cl_name][cl_key]['y1']}
-												{y2 = chart_img_source_val[img_src]['cl_bbox'][cl_name][cl_key]['y2']}
+									<!-- svelte-ignore component-name-lowercase -->
+									<svg class = "gt_bboxes" id="image_box" width={setWidth} height={setHeight}>
+										{#each Object.keys(chart_img_source_val[img_src]['cl_dt_gt']) as gt_type}
+											{#each Object.keys(chart_img_source_val[img_src]['cl_dt_gt'][gt_type]) as gt_key}
+												{x1 = chart_img_source_val[img_src]['cl_dt_gt'][gt_type][gt_key]['x1']}
+												{x2 = chart_img_source_val[img_src]['cl_dt_gt'][gt_type][gt_key]['x2']}
+												{y1 = chart_img_source_val[img_src]['cl_dt_gt'][gt_type][gt_key]['y1']}
+												{y2 = chart_img_source_val[img_src]['cl_dt_gt'][gt_type][gt_key]['y2']}
 												{boxWidth = (Math.abs(x2-x1)/imageWidth)*setWidth}
 												{boxHeight = (Math.abs(y2-y1)/imageHeight)*setHeight}
 												{X = (x1/imageWidth)*setWidth}
 												{Y = (y1/imageHeight)*setHeight}
-												<rect x={X} y={Y} width={boxWidth} height={boxHeight} stroke={class_lists[cl_name]['color']}/>
+												{gt_cate_name = chart_img_source_val[img_src]['cl_dt_gt_cate'][gt_type][gt_key]}
+												<rect x={X} y={Y} width={boxWidth} height={boxHeight} fill= "transparent" stroke={class_lists[gt_cate_name]['color']}/>
+												<g>
+													<!--<rect x={X + 0.67 * boxWidth} y = {Y - boxHeight/5} width ={boxWidth/3} height ={boxHeight/5} stroke={class_lists[current_selected_class]['color']} fill={class_lists[current_selected_class]['color']}/>-->
+													{#if (boxWidth / 3) > 6}
+														<text x = {X + boxWidth - 12} y={Y- 2} font-size={6} fill={class_lists[gt_cate_name]['color']}>{chart_img_source_val[img_src]['cl_dt_gt_cate'][gt_type][gt_key]}</text>
+													{/if}
+													{#if (boxWidth / 3) <= 6 && (boxWidth /3 ) > 4}
+														<text x = {X + boxWidth - 8} y={Y- 2} font-size={4} fill={class_lists[gt_cate_name]['color']}>{chart_img_source_val[img_src]['cl_dt_gt_cate'][gt_type][gt_key]}</text>
+													{/if}
+													{#if (boxWidth / 3) <= 4}
+														<text x = {X + 0.67 * boxWidth} y={Y- 2} font-size={boxWidth / 3} fill={class_lists[gt_cate_name]['color']}>{chart_img_source_val[img_src]['cl_dt_gt_cate'][gt_type][gt_key]}</text>
+													{/if}
+												</g>
 											{/each}
+										{/each}
+									</svg>
+
+
+
+									<!-- svelte-ignore component-name-lowercase -->
+									<svg class = "bboxes" id="image_box" width={setWidth} height={setHeight}>
+										{#each Object.keys(chart_img_source_val[img_src]['cl_dt']) as sel_bbox}
+											{x1 = chart_img_source_val[img_src]['cl_dt'][sel_bbox]['x1']}
+											{x2 = chart_img_source_val[img_src]['cl_dt'][sel_bbox]['x2']}
+											{y1 = chart_img_source_val[img_src]['cl_dt'][sel_bbox]['y1']}
+											{y2 = chart_img_source_val[img_src]['cl_dt'][sel_bbox]['y2']}
+											{boxWidth = (Math.abs(x2-x1)/imageWidth)*setWidth}
+											{boxHeight = (Math.abs(y2-y1)/imageHeight)*setHeight}
+											{X = (x1/imageWidth)*setWidth}
+											{Y = (y1/imageHeight)*setHeight}
+											{tooltip_val = "predicted class : " + chart_img_source_val[img_src]['cl_dt_pred'][sel_bbox] + "\n truth class : " + chart_img_source_val[img_src]['cl_dt_cate'][sel_bbox] + "\n detection score : " + chart_img_source_val[img_src]['cl_dt_score'][sel_bbox]}
+											<rect title={tooltip_val} use:tooltip x={X} y={Y} width={boxWidth} height={boxHeight} fill="transparent" stroke={class_lists[current_selected_class]['color']}/>
+											<g>
+												<!--<rect x={X + 0.67 * boxWidth} y = {Y - boxHeight/5} width ={boxWidth/3} height ={boxHeight/5} stroke={class_lists[current_selected_class]['color']} fill={class_lists[current_selected_class]['color']}/>-->
+												{#if (boxWidth / 3) > 6}
+													<text x = {X} y={Y- 2} font-size={6} fill={class_lists[current_selected_class]['color']}>{chart_img_source_val[img_src]['cl_dt_pred'][sel_bbox]}</text>
+												{/if}
+												{#if (boxWidth / 3) <= 6 && (boxWidth /3 ) > 4}
+												<text x = {X} y={Y- 2} font-size={4} fill={class_lists[current_selected_class]['color']}>{chart_img_source_val[img_src]['cl_dt_pred'][sel_bbox]}</text>
+												{/if}
+												{#if (boxWidth / 3) <= 4}
+												<text x = {X} y={Y- 2} font-size={boxWidth / 3} fill={class_lists[current_selected_class]['color']}>{chart_img_source_val[img_src]['cl_dt_pred'][sel_bbox]}</text>
+												{/if}
+											</g>
 										{/each}
 									</svg>
 								</div>
 								<Modal isOpenModal={isOpenModal} on:closeModal={closeModal} bind:this={modal_value}/>
 							{/each}
 						</div>
-						{/if}
+					{/if}
 
-						{#if switch_check == true}
-						<!-- svelte-ignore a11y-missing-attribute -->
-						<div id ="images_view">
-							{#each chart_img_idx_src as img_src}
-								<div class = "multiple_images" on:click={openModal} on:click={modal_value.get_instance_val(img_src, chart_img_source_val[img_src])}>
-									<!-- svelte-ignore a11y-missing-attribute -->
-									<img class = "images" id="selected_image" src = {img_src} width = {setWidth} height={setHeight}>
-									<svg class = "bboxes" id="image_box" width={setWidth} height={setHeight}>
-										{#each Object.keys(chart_img_source_val[img_src]['dt_bbox']) as dt_name}
-											{#each Object.keys(chart_img_source_val[img_src]['dt_bbox'][dt_name]) as dt_key}
-												{x1 = chart_img_source_val[img_src]['dt_bbox'][dt_name][dt_key]['x1']}
-												{x2 = chart_img_source_val[img_src]['dt_bbox'][dt_name][dt_key]['x2']}
-												{y1 = chart_img_source_val[img_src]['dt_bbox'][dt_name][dt_key]['y1']}
-												{y2 = chart_img_source_val[img_src]['dt_bbox'][dt_name][dt_key]['y2']}
-												{boxWidth = (Math.abs(x2-x1)/imageWidth)*setWidth}
-												{boxHeight = (Math.abs(y2-y1)/imageHeight)*setHeight}
-												{X = (x1/imageWidth)*setWidth}
-												{Y = (y1/imageHeight)*setHeight}
-												<rect x={X} y={Y} width={boxWidth} height={boxHeight} stroke={detected_types[dt_name]['color']}/>
-											{/each}
+					{#if show_gt_images == true}
+						<div id = "images_view">
+							{#each gt_image_idx_src as img_src}
+								<div class = "multiple_images">
+									<img class = "images" id="selected_image" alt="" src = {img_src} width = {setWidth} height={setHeight} >
+									<!-- svelte-ignore component-name-lowercase -->
+									<svg class = "bboxes" id = "image_box" width={setWidth} height={setHeight}>
+										{#each Object.keys(gt_image_source_val[img_src]['cl_gt']) as sel_bbox}
+											{x1 = gt_image_source_val[img_src]['cl_gt'][sel_bbox]['x1']}
+											{x2 = gt_image_source_val[img_src]['cl_gt'][sel_bbox]['x2']}
+											{y1 = gt_image_source_val[img_src]['cl_gt'][sel_bbox]['y1']}
+											{y2 = gt_image_source_val[img_src]['cl_gt'][sel_bbox]['y2']}
+											{boxWidth = (Math.abs(x2-x1)/imageWidth)*setWidth}
+											{boxHeight = (Math.abs(y2-y1)/imageHeight)*setHeight}
+											{X = (x1/imageWidth)*setWidth}
+											{Y = (y1/imageHeight)*setHeight}
+											<rect x={X} y={Y} width={boxWidth} height={boxHeight} fill="transparent" stroke={class_lists[current_selected_class]['color']}/>
 										{/each}
 									</svg>
 								</div>
-								<Modal isOpenModal={isOpenModal} on:closeModal={closeModal} bind:this={modal_value}/>
 							{/each}
 						</div>
-
-						{/if}
-
-
 					{/if}
 				</div>
 			</div>
@@ -788,7 +1288,7 @@
 	}
 	.view-panel {
 		border: 2px solid #eee;
-		margin-bottom: 15px;
+		margin-bottom: 10px;
 		margin-right: 15px;
 	}
 	.view-title {
@@ -807,11 +1307,31 @@
 		height: 200px;
 		overflow-y: auto;
 	}
-	table, th, td {
+	table, td ,th{
 		border: 0.5px solid;
 		border-collapse: collapse;
 		margin-bottom: 2px;
 	}
+
+	th.rotate{
+		height: 125px;
+		white-space: nowrap;
+		padding: 0 !important;
+	}
+
+	th.rotate > div {
+		transform:
+			translate(-1px, 45px)
+			rotate(270deg);
+		width: 30px;
+	}
+
+	th.rotate > div > span{
+		border-bottom: 1px solid #e2e2e2;
+		font-size: 13px;
+	}
+
+
 	.summary-table td:hover{
 		font-weight: bold;
 	}
@@ -819,31 +1339,31 @@
 	.summary-table {
 		border: 1px solid #17202A;
 		width: 100%;
-		text-align: center;
+
 		border-collapse: collapse;
 	}
-	.summary-table td, .summary-table th {
+	.summary-table td summary-table th {
 		border: 1px solid #808B96;
 		padding: 4px 2px;
+		text-align: center;
 	}
 	.summary-table tbody td {
 		font-size: 10px;
+		text-align: left;
 	}
-	/*.summary-table tr:nth-child(even) {
-		background: #F5F4F4;
-	}*/
+
 	.summary-table thead {
-		/*background: #e0e2e2;*/
 		background: #F5F4F4;
 	}
 	.summary-table thead th {
 		font-size: 10px;
-		/*color: #FFFFFF;*/
 		text-align: center;
 	}
 	.summary-table thead th:first-child {
 		border-left: none;
+		text-align: center;
 	}
+
 
 	.multiple_images{
     position: relative;
@@ -856,12 +1376,19 @@
   .multiple_images .bboxes{
     position: absolute;
     top: 0;
+    stroke-width: 1px;
+  }
+	.multiple_images .gt_bboxes{
+    position: absolute;
+    top: 0;
     stroke-width: 1.5px;
-    fill: none;
+    stroke-dasharray: 5,5;
   }
 
-	h3{
+	h4{
     text-align: center;
+    margin-top: 0;
+    margin-bottom: 2px;
   }
   .chart{
     width:100%;
