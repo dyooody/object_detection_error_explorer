@@ -108,7 +108,7 @@
 </script>
 
 <!-- bbox chart -->
-<h3> bbox distribution </h3>
+<h4> bbox distribution </h4>
 <div class="chart" bind:clientWidth={width} bind:clientHeight={height}>
   <svg>
     <!-- y axis -->
@@ -140,7 +140,7 @@
 </div>
 
 <!-- score chart -->
-<h3> score distribution </h3>
+<h4> score distribution </h4>
 <div class="chart" bind:clientWidth={width} bind:clientHeight={height}>
   <svg>
     <!-- y axis -->
@@ -172,7 +172,7 @@
 </div>
 
 <!-- iou chart -->
-<h3> iou distribution </h3>
+<h4> iou distribution </h4>
 <div class="chart" bind:clientWidth={width} bind:clientHeight={height}>
   <svg>
     <!-- y axis -->
@@ -204,12 +204,15 @@
 </div>
 
 <style>
-  h3{
+  h4{
     text-align: center;
+    margin-top: 0;
+    margin-bottom: 2px;
   }
   .chart{
     width:100%;
     max-width: 500px;
+    height: 180px;
     margin: 0 auto;
   }
   svg{

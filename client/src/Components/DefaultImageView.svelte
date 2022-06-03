@@ -8,15 +8,15 @@
   }
 
 	let class_lists = {
-		"car":{checked: false, color: "#884EA0"},
-		"bus":{checked: false, color: "#A93226 "},
+		"car":{checked: false, color: "#EC7063"},
+		"bus":{checked: false, color: "#AF7AC5"},
 		"bicycle":{checked: false, color: "#2E86C1"},
-		"motorcycle":{checked: false, color:"#17A589"},
-		"truck":{checked: false, color:"#2ECC71"},
+		"motorcycle":{checked: false, color:"#76D7C4"},
+		"truck":{checked: false, color:"#F8C471"},
 		"traffic sign":{checked: false, color: "#F1C40F"},
 		"traffic light":{checked: false, color:"#CA6F1E"},
-		"pedestrian":{checked: false, color:"#F7F9F9"},
-		"rider":{checked: false, color:"#FEF5E7"},
+		"pedestrian":{checked: false, color:"#1F618D"},
+		"rider":{checked: false, color:"#85C1E9"},
 		"train":{checked: false, color:"#F4ECF7"},
 		"other vehicle":{checked: false, color:"#28B463"},
 		"other person":{checked: false, color:"#85C1E9"},
@@ -49,43 +49,41 @@
     let result_data = (await fetched.json());
     console.log(result_data)*/
     fetch('/default_image_show/').then(res=>res.json()).then(result=>{
+
       image_val_lists = result;
       for (var i =0; i< image_val_lists.length; i++){
         let image_path = "";
         let class_bbox = [];
         let dtype_bbox = [];
         let gt_bbox = [];
-        let cl_key = [];
-        let dt_key = [];
-        let gt_key = [];
         let data = image_val_lists[i];
-        dt_key = Object.keys(data['bbox_dtype']);
+        /*dt_key = Object.keys(data['bbox_dtype']);
         dt_key = dt_key;
         cl_key = Object.keys(data['bbox_cate']);
         cl_key = cl_key;
         gt_key = Object.keys(data['gt_bbox']);
-        gt_key = gt_key;
+        gt_key = gt_key;*/
         image_path = data['image_dir'];
         image_idx_src.push(data['image_dir']);
         image_idx_src = image_idx_src;
-        for (var j=0; j<Object.keys(data['bbox_cate']).length; j++){
-          var cl_name = Object.keys(data['bbox_cate'])[j];
-          class_bbox[cl_name] = data['bbox_cate'][cl_name];
+        for (var j=0; j<Object.keys(data['total_dt']).length; j++){
+          var cl_name = Object.keys(data['total_dt'])[j];
+          class_bbox[cl_name] = data['total_dt'][cl_name];
         }
-        for (var k=0; k<Object.keys(data['bbox_dtype']).length; k++){
-          var dt_name = Object.keys(data['bbox_dtype'])[k];
-          dtype_bbox[dt_name] = data['bbox_dtype'][dt_name];
-        }
-        for (var l=0; l<Object.keys(data['gt_bbox']).length; l++){
-          var gt_name = Object.keys(data['gt_bbox'])[l];
-          gt_bbox[gt_name] = data['gt_bbox'][gt_name];
+        /*for (var k=0; k<Object.keys(data['bbox_dtype']['box']).length; k++){
+          var dt_name = Object.keys(data['bbox_dtype']['box'])[k];
+          dtype_bbox[dt_name] = data['bbox_dtype']['box'][dt_name];
+        }*/
+        for (var l=0; l<Object.keys(data['total_gt']).length; l++){
+          var gt_name = Object.keys(data['total_gt'])[l];
+          gt_bbox[gt_name] = data['total_gt'][gt_name];
         }
         class_bbox = class_bbox;
         dtype_bbox = dtype_bbox;
         gt_bbox = gt_bbox;
         image_source_val[image_path] = [];
         image_source_val[image_path]['cl_bbox'] = class_bbox;
-        image_source_val[image_path]['dt_bbox'] = dtype_bbox;
+        //image_source_val[image_path]['dt_bbox'] = dtype_bbox;
         image_source_val[image_path]['gt_bbox'] = gt_bbox;
         //image_source_val[image_path] = class_bbox;
       }
@@ -157,7 +155,6 @@
     stroke-width: 1.5px;
     fill: none;
     stroke-dasharray: 5,5;
-    opacity: 0.5;
   }
 
 </style>
