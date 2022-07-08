@@ -2,9 +2,6 @@
 	export let style;
   export let table_heads;
   export let table_vals;
-	//export let detail = "False";
-
-	//console.log("detail ::: ", detail)
 
 	function class_details_result(selected_class, selected_head){
 		console.log("selected_class :::: ", selected_class);

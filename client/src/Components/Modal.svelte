@@ -1,6 +1,5 @@
 <script>
   import { createEventDispatcher } from 'svelte';
-  import { tooltip } from './tooltip';
 
   export let isOpenModal;
 
@@ -56,7 +55,6 @@
   let whole_key = [];
   let dtype_key = [];
   let gt_dict = {};
-  let tooltip_val;
   let actualWidth = 1280, actualHeight=720, givenWidth= 900, givenHeight=580;
   let boxHeight, boxWidth, box_area, X, Y, cur_gt_cate;
 
@@ -77,8 +75,6 @@
   export function get_instance_val(img_src, img_bbox_val, selected_class, selected_dtype){
     reset_selection();
 
-    console.log("selected class ::", selected_class);
-
     cur_img_src = img_src;
     cur_img_vals = img_bbox_val;
     dt_bbox_val = cur_img_vals['bbox_values']['box'];
@@ -88,9 +84,7 @@
     class_lists[selected_class]['dt'] = true;
     detected_types[selected_dtype]['checked'] = true;
     if (selected_dtype == 2 || selected_dtype == 4){
-      console.log("selected_dypte ::", selected_dtype);
       let cor_class = gt_cate_val[selected_class][selected_dtype];
-      console.log("cor_class ::: ", cor_class);
       for (var i =0; i < cor_class.length; i++){
         class_lists[cor_class[i]]['gt'] = true;
       }
@@ -99,7 +93,6 @@
     }
 
     cl_key = Object.keys(cur_img_vals['bbox_values']['box']);
-    console.log("cl_key ::: ", cl_key);
 
     whole_key = Object.keys(cur_img_vals['bbox_values']['box']);
 
@@ -120,7 +113,6 @@
         let k4 = gt_bbox_val[k1[i]][k2[j]];
         for(var l=0; l < k3.length; l++){
           if (whole_key.includes(k3[l]) == false){
-            console.log("not included key ::: ", k3[l]);
             whole_key.push(k3[l]);
           }
           let kk = Object.keys(gt_dict);
@@ -135,13 +127,8 @@
       }
     }
     gt_key = Object.keys(gt_dict);
-    console.log("gt_key :: ", gt_key);
     gt_key = gt_key;
-
-    console.log("whole_key :: ", whole_key);
     whole_key = whole_key;
-
-    console.log("cl_key :: ", cl_key);
     cl_key = cl_key;
   }
 
@@ -220,13 +207,13 @@
                   <rect x= {X} y = {Y} width = {boxWidth} height = {boxHeight} fill="transparent" stroke = {class_lists[cl]['color']}/>
                   <g>
                     {#if (boxWidth / 3 > 30)}
-                      <text x = {X + boxWidth - 15} y={Y- 2} font-size={15} fill="#ABB2B9">{cl}</text>
+                      <text x = {X + boxWidth - 15} y={Y- 2} font-size={15} fill={class_lists[cl]['color']}>{cl}</text>
                     {/if}
                     {#if ((boxWidth / 3) <= 30 && (boxWidth /3 ) > 15)}
-                      <text x = {X + boxWidth - 10} y={Y- 2} font-size={10} fill="#ABB2B9">{cl}</text>
+                      <text x = {X + boxWidth - 10} y={Y- 2} font-size={10} fill={class_lists[cl]['color']}>{cl}</text>
                     {/if}
                     {#if (boxWidth / 3 <= 15)}
-                      <text x = {X + 0.67 * boxWidth} y={Y- 2} font-size={boxWidth / 3} fill="#ABB2B9">{cl}</text>
+                      <text x = {X + 0.67 * boxWidth} y={Y- 2} font-size={boxWidth / 3} fill={class_lists[cl]['color']}>{cl}</text>
                     {/if}
                   </g>
                   {/each}
@@ -240,7 +227,6 @@
           {#each cl_key as cl}
             {#if class_lists[cl]['dt'] == true}
               {#if dt_bbox_val[cl] != null}
-              {console.log("dt_bbox_val[cl] ::: ", dt_bbox_val[cl])}
               {#each Object.keys(dt_bbox_val[cl]) as dtype}
                 {#if detected_types[dtype]['checked'] == true}
                   {#each dt_bbox_val[cl][dtype] as cl_bbox, i}
@@ -249,18 +235,16 @@
                   {box_area = boxWidth * boxHeight}
                   {X = (cl_bbox['x1']/actualWidth)*givenWidth}
                   {Y = (cl_bbox['y1']/actualHeight)*givenHeight}
-                  {tooltip_val = "predicted class : " + cl + " truth class : " + gt_cate_val[cl][dtype][i]}
-                  {console.log("tooltip_val ::: ", tooltip_val)}
-                  <rect title = {tooltip_val} use:tooltip x= {X} y = {Y} width = {boxWidth} height = {boxHeight} fill="transparent" stroke = {class_lists[cl]['color']}/>
+                  <rect x= {X} y = {Y} width = {boxWidth} height = {boxHeight} fill="transparent" stroke = {class_lists[cl]['color']}/>
                   <g>
                     {#if (boxWidth / 3 > 30)}
-											<text x = {X} y={Y- 2} font-size={15} fill="white">{cl}</text>
+											<text x = {X} y={Y- 2} font-size={15} fill={class_lists[cl]['color']}>{cl}</text>
 										{/if}
 										{#if ((boxWidth / 3 <= 30) && (boxWidth /3 ) > 15)}
-										  <text x = {X} y={Y- 2} font-size={10} fill="white">{cl}</text>
+										  <text x = {X} y={Y- 2} font-size={10} fill={class_lists[cl]['color']}>{cl}</text>
 										{/if}
 										{#if (boxWidth / 3 <= 15)}
-											<text x = {X} y={Y- 2} font-size={boxWidth / 3} fill="white">{cl}</text>
+											<text x = {X} y={Y- 2} font-size={boxWidth / 3} fill={class_lists[cl]['color']}>{cl}</text>
 										{/if}
                   </g>
                   {/each}
