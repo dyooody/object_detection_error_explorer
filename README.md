@@ -3,16 +3,17 @@
 ### File locations and explanations
 
 1. used BDD 100k image for object detection experience 
-
 2. json datafiles
+```
 /client/public/datafiles/
+```
 (1) det_val_gt_cat.json: ground truth jsonfile
 (2) nms_summary.json: contains information for the summary tables, and image indexes for class and detection types
 (3) prediction_result.json: prediction result jsonfile
 (4) detection_type_description.json: descriptions for each categories
 
 3. Svelte files
-(1) App.svelte -> mostly done here
+(1) App.svelte: main page
 (2) ./Components/DefaultImageView.svelte: loads images for the default image view
 (3) ./Components/Distribution.svelte: loads different charts for the default chart view
 (4) ./Components/Switch : toggle switch for result summary tables
