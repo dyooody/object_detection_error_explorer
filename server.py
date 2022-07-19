@@ -13,7 +13,7 @@ detected_names = {
     'cls and loc error': 'type 4',
     'duplication error': 'type 5',
     'back detect error': 'type 6',
-    'other error' : 'type 8'
+    'min-overlap error' : 'type 8'
 }
 
 gt_names = {
@@ -40,9 +40,6 @@ with open("client/public/datafiles/det_val_gt_cate.json") as f:
 with open("client/public/datafiles/detection_type_description.json") as f:
     desc_result = json.load(f)
 
-# for test
-with open("client/public/datafiles/subset_result.json") as f:
-    subset_result = json.load(f)
 
 # Path for our main Svelte page
 @app.route("/")
@@ -245,12 +242,13 @@ def default_image_show():
     print("def default_image_show()")
     default_img_value_list = []
 
-    for i in range(len(subset_result)):
-        img_idx = subset_result[i]['index']
+
+    for i in range(200):
+        img_idx = pred_result[i]['index']
         detected_label_vals = image_bbox_values(img_idx, None, None)
         default_img_value_list.append(detected_label_vals)
 
-    return jsonify(default_img_value_list[:200])
+    return jsonify(default_img_value_list)
 
 def get_bbox_size_dist(bbox_size_vals):
     bbox_size_dist = dict()
@@ -409,7 +407,7 @@ def get_detailed_gt_info(selected_class, selected_head):
         image_value_list.append(gt_label_vals)
 
     gt_values = dict()
-    gt_values['image_values'] = image_value_list
+    gt_values['image_values'] = image_value_list[:300]
     gt_values['gtype'] = type_val
 
     return jsonify(gt_values)
@@ -463,7 +461,7 @@ def get_detailed_class_info(selected_class, selected_head):
 
     print("image len:::: ", len(img_val_list))
 
-    result['image_values'] = img_val_list[:100]
+    result['image_values'] = img_val_list[:300]
 
     return jsonify(result)
 
@@ -494,7 +492,7 @@ def get_chart_detail_info(selected_class, selected_dtype, selected_key, chart_ty
 
 
     img_val_list = []
-    img_idx_list = list(set(res))[:100]
+    img_idx_list = list(set(res))[:300]
     print(img_idx_list[:30])
     for i in range(len(img_idx_list)):
         img_id = img_idx_list[i]
