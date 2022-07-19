@@ -1,7 +1,8 @@
-# Object Detection Error Analyzer
+# Object Detection Error Explorer
 
 ## Introduction <br/>
-![main page image](/images/main-page.png)
+![main page image](/images/main-page.png)<br/>
+Object detection error explorer is an interactive tool that supports the evaluation and analysis of the results of the object detection model <br/>
 ## File locations and explanations
 
 **1. used BDD 100k image for object detection experience** <br/>
