@@ -1,8 +1,7 @@
 # Object Detection Error Analyzer
 
 ## Introduction <br/>
-![main page image] (/../main/images/electrocat.png)
-
+![main page image](/images/main-page.png)
 ## File locations and explanations
 
 **1. used BDD 100k image for object detection experience** <br/>
