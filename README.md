@@ -1,7 +1,7 @@
 # Object Detection Error Analyzer
 
 ## Introduction <br/>
-
+![main page image] (/../main/images/electrocat.png)
 
 ## File locations and explanations
 
