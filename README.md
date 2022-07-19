@@ -6,7 +6,11 @@
 ## File locations and explanations
 
 **1. used BDD 100k image for object detection experience** <br/>
-**2. json datafiles**
+
+**2. object detection models and python files** <br/>
+(1) 
+
+**3. json datafiles**
 ```
 /client/public/datafiles/
 ```
@@ -15,7 +19,7 @@
 > (3) prediction_result.json: prediction result jsonfile <br/>
 > (4) detection_type_description.json: descriptions for each categories <br/>
 
-**3. svelte files**
+**4. svelte files**
 > (1) App.svelte: main page <br/>
 > (2) ./Components/DefaultImageView.svelte: loads images for the default image view <br/>
 > (3) ./Components/Distribution.svelte: loads different charts for the default chart view <br/>
