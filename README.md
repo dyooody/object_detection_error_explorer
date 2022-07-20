@@ -2,13 +2,23 @@
 
 ## Introduction <br/>
 ![main page image](/images/main-page.png)<br/>
-Object detection error explorer is an interactive tool that supports the evaluation and analysis of the results of the object detection model <br/>
+Object detection error explorer is an interactive tool that supports the evaluation and analysis of the results of the object detection model. We categorized detected and ground-truth labels into 7 and 11 types. With this tool, users can analyze object detection results based on this categorization at three different levels: summary level, class and detection type level, and image level. This enables users to analyze a large number of and a variety of model errors from a summarized overview into individual images. <br/>
+
+From the summary level, users can explore the overall detection results such as average precision, the number of detected labels and ground truth labels, and the number of each detection type. At the class and detection level, users can see more detailed information about a certain class and detection type and images that correspond to it. At the image level, users can click each image to get a detailed analysis. <br/>
+
+> for more information: [presentation document](/images/error-explorer.pdf)
+
+
 ## File locations and explanations
 
 **1. used BDD 100k image for object detection experience** <br/>
 
 **2. object detection models and python files** <br/>
-(1) 
+(1) test_with_checkpoint.py <br/>
+> Fine-tuned the faster-RCNN pre-trained model trained with ms cocodataset with BDD 100K training dataset. <br/>
+
+(2) comparing_with_ground_truth.py <br/>
+> From the detection result obtained with faster-RCNN model, calculated the IoU and mAP value of the detection results. Also, categorized the detection label based on the created categories. <br/>
 
 **3. json datafiles**
 ```
