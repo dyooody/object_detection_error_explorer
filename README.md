@@ -20,7 +20,8 @@ From the summary level, users can explore the overall detection results such as 
 (2) comparing_with_ground_truth.py <br/>
 > From the detection result obtained with faster-RCNN model, calculated the IoU and mAP value of the detection results. Also, categorized the detection label based on the created categories. <br/>
 
-**3. json datafiles**
+**3. json datafiles**<br/>
+     - currently not uploaded due to the file size
 ```
 /client/public/datafiles/
 ```
