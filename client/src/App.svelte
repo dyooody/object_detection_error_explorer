@@ -3,7 +3,6 @@
 	import Distribution from './Components/Distribution.svelte';
 	import { onMount } from 'svelte';
 	import { scaleLinear } from "d3-scale";
-	import { line, curveStep, curveNatural, extent, svg, text } from 'd3';
 	import Switch from "svelte-switch";
 	import Modal from './Components/Modal.svelte';
 	import { tooltip } from './Components/tooltip';
@@ -21,7 +20,6 @@
 		show_selected_chart = false;
 		show_default_chart = true;
 		show_default_images = true;
-		console.log("chage_table_swtich :: ", change_table_switch);
 	}
 
 
@@ -57,9 +55,7 @@
 			class_list = class_list;
 			table_heads = ['class name', 'average precision', 'detected number', 'gt number',
 			'correct detection', 'classification error', 'localization error',
-			'cls and loc error', 'duplication error', 'back detect error', 'other error'];
-			//table_heads = ['class name', 'average precision', 'number', 'gt_number', 'type 1',
-			//'type 2', 'type 3', 'type 4', 'type 5', 'type 6', 'type 8'];
+			'cls and loc error', 'duplication error', 'back detect error', 'min-overlap error'];
 
 			let nums = [];
 			let ap = [];
@@ -113,8 +109,6 @@
 				};
 			let result_array = overall;
 			let class_list = Object.keys(result_array);
-			//gt_table_heads = ['class name', 'number', 'type 1', 'type 2', 'type 3', 'type 4', 'type 5',
-			//'type 6','type 7', 'type 8', 'type 9', 'type 10', 'type 11'];
 			gt_table_heads = ['class name', 'number', 'match + correct', 'match + cls', 'match + loc',
 			'match + cls and loc', 'match + incorrect', 'matches + cor, dup', 'matches + cor, cls', 'matches + cor, loc',
 			'matches + with cor', 'matches + incor', 'missed detected']
@@ -143,11 +137,9 @@
 
 		fetch('/dt_types/').then(res => res.json()).then(types=>{
 			table_heads_desc = types;
-			console.log("table_heads_desc ::: ", table_heads_desc);
 		});
 		fetch('/gt_types/').then(res => res.json()).then(types=>{
 			gt_table_heads_desc = types;
-			console.log("gt_table_head_desc ::: ", gt_table_heads_desc);
 		});
 
   });
@@ -169,17 +161,6 @@
 		"trailer" :{checked: false, color:"#F5B7B1"}
 	};
 
-	let detected_types = {
-		"1":{name:"correctly classified", checked: false, color: "#884EA0"},
-		"2":{name:"classification error", checked: false, color: "#A93226 "},
-		"3":{name:"localization error", checked: false, color: "#2E86C1"},
-		"4":{name:"cls + loc error", checked: false, color:"#2ECC71"},
-		"5":{name:"duplicate error", checked: false, color: "#F1C40F"},
-		"6":{name:"background error", checked: false, color:"#F7F9F9"},
-		"7":{name:"missed GT error", checked: false, color:"#FEF5E7"},
-		"8":{name:"incorrectly classified", checked: false, color:"#28B463"},
-	};
-
 	let current_selected_class;
 	let current_selected_dtype;
 	let selected_dtype;
@@ -195,7 +176,7 @@
 
 	const padding = {top:20, right:15, bottom:20, left:25};
   let width = 500;
-  let height = 200;
+  let height = 180;
 
   let innerWidth = width - (padding.left + padding.right);
 
@@ -227,22 +208,7 @@
   let classes_ticks = [];
   let classes_barWidth;
 
-	let line_iou_xScale;
-	let	line_iou_ySclae;
-	let	line_bbox_xScale;
-	let	line_bbox_yScale;
-	let	line_score_xScale;
-	let	line_score_yScale;
-	let line_iou_xTicks = [];
-	let line_iou_yTicks = [];
-	let line_bbox_xTicks = [];
-	let line_bbox_yTicks = [];
-	let line_score_xTicks = [];
-	let line_score_yTicks = [];
-
-	let line_gen;
 	let total_result;
-
 	function adjust_format(tick){
 		return "'" + tick.toString().slice(-2);
 	}
@@ -260,7 +226,6 @@
 		show_selected_images = false;
 		show_gt_images = true;
 		fetch("/ground_truth_images/"+selected_class+'/'+selected_head).then(res=>res.json()).then(data=>{
-			console.log("data ::: ", data);
 
 			gt_image_val_lists = data['image_values'];
 			current_selected_class = selected_class;
@@ -277,7 +242,6 @@
 				gt_image_source_val[image_path]['cl_gt'] = selected_bbox;
 			}
 
-			console.log("gt_image_source_val :: ", gt_image_source_val);
 		});
 	}
 
@@ -312,21 +276,6 @@
   	classes_yScale;
   	classes_ticks = [];
   	classes_barWidth;
-
-		line_iou_xScale;
-		line_iou_ySclae;
-		line_iou_xTicks = [];
-		line_iou_yTicks = [];
-		line_bbox_xScale;
-		line_bbox_yScale;
-		line_bbox_xTicks = [];
-		line_bbox_yTicks = [];
-		line_score_xScale;
-		line_score_yScale;
-		line_score_xTicks = [];
-		line_score_yTicks = [];
-
-		line_gen;
 
 		show_default_images = false;
 		show_selected_images = true;
@@ -469,50 +418,6 @@
 				classes_ticks = classes_yScale.ticks(5);
 			}
 
-			let total_chart_iou = data['chart_iou'];
-			line_iou_xScale = scaleLinear()
-				.domain([0, Math.max(...total_chart_iou)])
-				.range([padding.left, width - padding.right]);
-
-			line_iou_ySclae = scaleLinear()
-				.domain([0, Math.max(...total_chart_iou)])
-				.range([height - padding.bottom, padding.top]);
-
-			line_iou_xTicks = line_iou_xScale.ticks(10);
-			line_iou_yTicks = line_iou_ySclae.ticks(10);
-
-			let total_chart_bbox = data['chart_bbox'];
-			line_bbox_xScale = scaleLinear()
-				.domain([0, Math.max(...total_chart_bbox)])
-				.range([padding.left, width - padding.right]);
-
-			line_bbox_yScale = scaleLinear()
-				.domain([0, Math.max(...total_chart_bbox)])
-				.range([height - padding.bottom, padding.top]);
-
-			line_bbox_xTicks = line_bbox_xScale.ticks(10);
-			line_bbox_yTicks = line_bbox_yScale.ticks(10);
-
-			let total_chart_score = data['chart_score'];
-			line_score_xScale = scaleLinear()
-				.domain([0, Math.max(...total_chart_score)])
-				.range([padding.left, width - padding.right]);
-
-			line_score_yScale = scaleLinear()
-				.domain([0, Math.max(...total_chart_score)])
-				.range([height - padding.bottom, padding.top]);
-
-			line_score_xTicks = line_score_xScale.ticks(10);
-			line_score_yTicks = line_score_yScale.ticks(10);
-			console.log("line_score_yTicks::: ", line_score_yTicks);
-
-			line_gen = line()
-				.curve(curveStep)
-				.x((data) => line_bbox_xScale(data.chart_bbox))
-				.y((data) => lines_score_yScale(data.chart_score));
-
-			line_gen = line_gen;
-
 		});
 	}
 
@@ -529,7 +434,6 @@
 	}
 
 	function td_clicked(selected_class, selected_head, event){
-		console.log("selected td ::: ", selected_class + ", "+ selected_head);
 		var j = document.getElementsByTagName("td");
 		for (var i=0; i < j.length; i++){
 			j[i].style.backgroundColor = 'white';
@@ -548,7 +452,6 @@
 	}
 
 	function td_gt_clicked(selected_class, selected_head, event){
-		console.log("selected gt td ::: ", selected_class + ", " + selected_head);
 		var j = document.getElementsByTagName("td");
 		for (var i=0; i < j.length; i++){
 			j[i].style.backgroundColor = 'white';
@@ -563,7 +466,6 @@
 	}
 
 	function chart_dblclick(chart_type, chart_key, event){
-		console.log("event.style :: ", event.style);
 		show_selected_images = true;
 		show_chart_images = false;
 		show_default_chart = false;
@@ -578,7 +480,6 @@
 	let chart_img_idx_src = [];
 	let chart_image_val_lists = [];
 	function chart_detail_info(chart_type, chart_key, event){
-		console.log("event.style :: ", event.style);
 		var r = document.getElementsByClassName("chart_bars");
 		for (var i=0; i < r.length; i++){
 			r[i].style.fill = "#f5e0a8"
@@ -635,10 +536,6 @@
 
 	}
 
-	function image_detail(img_src){
-		console.log("img_src ::: ", img_src);
-
-	}
 	let isOpenModal = false;
 	let modal_value;
 	function openModal(){
@@ -651,7 +548,7 @@
 </script>
 
 <main>
-	<h1> Error Report</h1>
+	<h1> Object Detection Error Explorer</h1>
 	<div id="container">
 		<div id="sidebar" style="width: 550px;">
 			<div id="summary-view" class="view-panel">
@@ -888,7 +785,7 @@
 			</div>
 
 			<div id="score-distributions-view" class="view-panel">
-				<div class="view-title">Score Distributions</div>
+				<div class="view-title">Distribution Charts</div>
 					<div id="score-distributions-view-content">
 						{#if show_default_chart == true}
 						<Distribution/>
@@ -1004,7 +901,7 @@
 
 						<!-- misdetected class chart-->
 						{#if selected_dtype == 2}
-						<h4> mis-detected distribution </h4>
+						<h4> mis-classified distribution </h4>
 						<div class = "chart" bind:clientWidth={width} bind:clientHeight={height}>
 							<!-- svelte-ignore component-name-lowercase -->
 							<svg class = "chart-svg">
@@ -1039,41 +936,6 @@
 							</svg>
 						</div>
 						{/if}
-
-
-						<!-- bbox and score line chart-->
-						<!--<h4> bbox and score</h4>
-						<div class = "chart" bind:clientWidth= {width} bind:clientHeight={height}>-->
-							<!-- svelte-ignore component-name-lowercase -->
-							<!--<svg class = "chart-svg">-->
-								<!-- y axis-->
-								<!--<g class = "axis y-axis">
-									{#each line_score_yTicks as tick}
-										<g class ='tick tick-{tick}' transform='translate(0, {line_score_yScale(tick)})'>
-
-											<line x2 = "100%"></line>
-											<text y='-4'>{tick}</text>
-										</g>
-									{/each}
-								</g>-->
-
-								<!-- x axis
-								<g class = "axis x-axis">
-									{#each line_bbox_xTicks as tick}
-										<g class = "tick" transform ='translate({line_bbox_xScale(tick)},0)'>
-
-											<line y1="100%"/>
-											<text y='{height - padding.bottom + 16}'>{tick}</text>
-										</g>
-									{/each}
-								</g>
-
-
-
-
-							</svg>
-						</div>-->
-
 					{/if}
 					</div>
 			</div>
@@ -1081,22 +943,7 @@
 
 		<div id="main-section" style="width: 1000px;">
 			<div id="selected-image-view" class="view-panel">
-				<div class="view-title">Image View
-					<!--
-					{#if show_selected_images == true || show_chart_images == true}
-					<Switch on:change={handleChange} checked={switch_check} onColor="#7d8a91"
-					onHandleColor="#fff" handleDiameter={20} unCheckedIcon={false}
-					boxShadow="0px 1px 5px rgba(0, 0, 0, 0.6)"
-					activeBoxShadow="0px 0px 1px 10px rgba(0, 0, 0, 0.2)"
-					height={16} width={30} containerClass="react-switch"
-					id="material-switch">
-					<span slot="checkedIcon" />
-					<span slot="unCheckedIcon"/>
-					</Switch>
-
-					{switch_check ? 'detection type' : 'class'}
-					{/if}-->
-				</div>
+				<div class="view-title">Image View</div>
 				<div id="selected-image-view-content">
 					{#if show_default_images == true}
 					<DefaultImageView/>
@@ -1178,7 +1025,7 @@
 							{#each chart_img_idx_src as img_src}
 								<div class = "multiple_images" on:click={openModal} on:click={modal_value.get_instance_val(img_src, chart_img_source_val[img_src], current_selected_class, current_selected_dtype)}>
 									<!-- svelte-ignore a11y-missing-attribute -->
-									<img class = "images" id="selected_image" src = {img_src} width = {setWidth} height={setHeight} on:click={image_detail(img_src)}>
+									<img class = "images" id="selected_image" src = {img_src} width = {setWidth} height={setHeight}>
 									<!-- svelte-ignore component-name-lowercase -->
 									<svg class = "gt_bboxes" id="image_box" width={setWidth} height={setHeight}>
 										{#each Object.keys(chart_img_source_val[img_src]['cl_dt_gt']) as gt_type}
@@ -1250,7 +1097,7 @@
 								<div class = "multiple_images">
 									<img class = "images" id="selected_image" alt="" src = {img_src} width = {setWidth} height={setHeight} >
 									<!-- svelte-ignore component-name-lowercase -->
-									<svg class = "bboxes" id = "image_box" width={setWidth} height={setHeight}>
+									<svg class = "gt_bboxes" id = "image_box" width={setWidth} height={setHeight}>
 										{#each Object.keys(gt_image_source_val[img_src]['cl_gt']) as sel_bbox}
 											{x1 = gt_image_source_val[img_src]['cl_gt'][sel_bbox]['x1']}
 											{x2 = gt_image_source_val[img_src]['cl_gt'][sel_bbox]['x2']}
@@ -1398,7 +1245,7 @@
   .chart-svg{
     position: relative;
     width: 100%;
-    height: 200px;
+    height: 180px;
   }
   .tick {
 		font-family: Helvetica, Arial;
